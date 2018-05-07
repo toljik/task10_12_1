@@ -53,3 +53,84 @@ virsh net-define networks/$MANAGEMENT_NET_NAME.xml
 virsh net-start $EXTERNAL_NET_NAME
 virsh net-start $INTERNAL_NET_NAME
 virsh net-start $MANAGEMENT_NET_NAME
+
+
+#конфиг ВМ1
+
+echo "<domain type='$VM_VIRT_TYPE'>
+  <name>$VM1_NAME</name>
+  <memory unit='MiB'>$VM1_MB_RAM</memory>
+  <vcpu placment='static'>$VM1_NUM_CPU</vcpu>
+  <os>
+    <type>$VM_TYPE</type>
+    <boot dev='hd'/>
+  </os>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='$VM1_HDD'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='$VM1_CONFIG_ISO'/>
+      <target dev='hdc' bus='ide'/>
+      <readonly/>
+    </disk>
+    <interface type='network'>
+      <mac address='$MAC'>
+      <source network='$EXTERNAL_NET_NAME'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='network'>
+      <mac address='$MAC'>
+      <source network='$INTERNAL_NET_NAME'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='network'>
+      <mac address='$MAC'>
+      <source network='$MANAGEMENT_NET_NAME'/>
+      <model type='virtio'/>
+    </interface>
+  </devices>
+</domain>" > $VM1_NAME
+
+
+
+
+#конфиг ВМ2
+
+
+echo "<domain type='$VM_VIRT_TYPE'>
+  <name>$VM2_NAME</name>
+  <memory unit='MiB'>$VM2_MB_RAM</memory>
+  <vcpu placment='static'>$VM2_NUM_CPU</vcpu>
+  <os>
+    <type>$VM_TYPE</type>
+    <boot dev='hd'/>
+  </os>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='$VM2_HDD'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='$VM2_CONFIG_ISO'/>
+      <target dev='hdc' bus='ide'/>
+      <readonly/>
+    </disk>
+    <interface type='network'>
+      <mac address='$MAC'>
+      <source network='$INTERNAL_NET_NAME'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='network'>
+      <mac address='$MAC'>
+      <source network='$MANAGEMENT_NET_NAME'/>
+      <model type='virtio'/>
+    </interface>
+  </devices>
+</domain>" > $VM2_NAME
+
