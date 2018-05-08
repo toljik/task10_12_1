@@ -20,7 +20,7 @@ mkdir /var/lib/libvirt/images/vm1
 mkdir /var/lib/libvirt/images/vm2
 #Загрузка образа
 VMs_qcow2=/var/lib/libvirt/images/ubuntu-server-16.04.qcow2
-wget -O $VMS_qcow2 $VM_BASE_IMAGE
+wget -O /var/lib/libvirt/images/ubuntu-server-16.04.qcow2 $VM_BASE_IMAGE
 #xml для external network
 
 echo "<network>
@@ -103,7 +103,7 @@ echo "<domain type='$VM_VIRT_TYPE'>
       <model type='virtio'/>
     </interface>
   </devices>
-</domain>" > $VM1_NAME
+</domain>" > $VM1_NAME.xml
 
 
 
@@ -144,10 +144,10 @@ echo "<domain type='$VM_VIRT_TYPE'>
       <model type='virtio'/>
     </interface>
   </devices>
-</domain>" > $VM2_NAME
+</domain>" > $VM2_NAME.xml
 
 #meta-data vm1
-echo "instance-id: 
+echo "instance-id: vm1-toljika
 hostname: $VM1_NAME
 local-hostname: $VM1_NAME
 network-interfaces: |
@@ -185,7 +185,7 @@ apt-get install docker-ce -y  " > $d/config-drives/$VM1_NAME-config/user-data
 
 
 #meta-data vm2
-echo "instance-id:
+echo "instance-id: vm2-toljika
 hostname: $VM2_NAME
 local-hostname: $VM2_NAME
 network-interfaces: |
