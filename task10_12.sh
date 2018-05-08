@@ -132,7 +132,7 @@ echo "<domain type='$VM_VIRT_TYPE'>
       <readonly/>
     </disk>
     <interface type='network'>
-      <source dev='$VM2_INTERNAL_IF'>
+      <source dev='$VM2_INTERNAL_IF'/>
       <mac address='$MAC'/>
       <source network='$INTERNAL_NET_NAME'/>
       <model type='virtio'/>
