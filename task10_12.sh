@@ -10,7 +10,7 @@ cd $d
 apt update -y
 apt-get install libvirt-bin -y
 apt-get install qemu-kvm -y
-
+#Доп параметры
 MAC=52:54:00:`(date; cat /proc/interrupts) | md5sum | sed -r 's/^(.{6}).*$/\1/; s/([0-9a-f]{2})/\1:/g; s/:$//;'`
 mkdir networks
 mkdir config-drives
@@ -18,6 +18,9 @@ mkdir config-drives/$VM1_NAME-config
 mkdir config-drives/$VM2_NAME-config
 mkdir /var/lib/libvirt/images/vm1
 mkdir /var/lib/libvirt/images/vm2
+#Загрузка образа
+VMs_qcow2=/var/lib/libvirt/images/ubuntu-server-16.04.qcow2
+wget -O $VMS_qcow2 $VM_BASE_IMAGE
 #xml для external network
 
 echo "<network>
@@ -217,9 +220,6 @@ apt-get install docker-ce -y  " > $d/config-drives/$VM2_NAME-config/user-data
 
 
 #сборка образа 
-VMs_qcow2=/var/lib/libvirt/images/ubuntu-server-16.04.qcow2
-wget -O $VMS_qcow2 $VM_BASE_IMAGE
-
 cp $VMs_qcow2 $VM1_HDD
 cp $VMs_qcow2 $VM2_HDD
 
