@@ -6,15 +6,18 @@ cd $d
 #доп параметры
 . "$d/config"
 
+#обновления и доп пакеты
+apt update -y
+apt-get install libvirt-bin -y
+apt-get install qemu-kvm -y
+
 MAC=52:54:00:`(date; cat /proc/interrupts) | md5sum | sed -r 's/^(.{6}).*$/\1/; s/([0-9a-f]{2})/\1:/g; s/:$//;'`
 mkdir networks
 mkdir config-drives
 mkdir config-drives/$VM1_NAME-config
 mkdir config-drives/$VM2_NAME-config
-
-#обновления и доп пакеты
-apt update -y
-
+mkdir /var/lib/libvirt/images/vm1
+mkdir /var/lib/libvirt/images/vm2
 #xml для external network
 
 echo "<network>
