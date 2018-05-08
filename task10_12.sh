@@ -9,7 +9,8 @@ cd $d
 MAC=52:54:00:`(date; cat /proc/interrupts) | md5sum | sed -r 's/^(.{6}).*$/\1/; s/([0-9a-f]{2})/\1:/g; s/:$//;'`
 mkdir networks
 mkdir config-drives
-
+mkdir config-drives/$VM1_NAME-config
+mkdir config-drives/$VM2_NAME-config
 
 #обновления и доп пакеты
 apt update -y
@@ -78,17 +79,20 @@ echo "<domain type='$VM_VIRT_TYPE'>
       <readonly/>
     </disk>
     <interface type='network'>
-      <mac address='$MAC'>
+      <source dev='$VM1_EXTERNAL_IF'/>
+      <mac address='$MAC'/>
       <source network='$EXTERNAL_NET_NAME'/>
       <model type='virtio'/>
     </interface>
     <interface type='network'>
-      <mac address='$MAC'>
+      <source dev='$VM1_INTERNAL_IF'/>
+      <mac address='$MAC'/>
       <source network='$INTERNAL_NET_NAME'/>
       <model type='virtio'/>
     </interface>
     <interface type='network'>
-      <mac address='$MAC'>
+      <source dev='$VM1_MANAGEMENT_IF'/>
+      <mac address='$MAC'/>
       <source network='$MANAGEMENT_NET_NAME'/>
       <model type='virtio'/>
     </interface>
@@ -122,15 +126,108 @@ echo "<domain type='$VM_VIRT_TYPE'>
       <readonly/>
     </disk>
     <interface type='network'>
-      <mac address='$MAC'>
+      <source dev='$VM2_INTERNAL_IF'>
+      <mac address='$MAC'/>
       <source network='$INTERNAL_NET_NAME'/>
       <model type='virtio'/>
     </interface>
     <interface type='network'>
-      <mac address='$MAC'>
+      <source dev='$VM2_MANAGEMENT_IF'/>
+      <mac address='$MAC'/>
       <source network='$MANAGEMENT_NET_NAME'/>
       <model type='virtio'/>
     </interface>
   </devices>
 </domain>" > $VM2_NAME
 
+#meta-data vm1
+echo "instance-id: 
+hostname: $VM1_NAME
+local-hostname: $VM1_NAME
+network-interfaces: |
+  auto $VM1_EXTERNAL_IF
+  iface $VM1_EXTERNAL_IF inet dhcp
+
+  auto $VM1_INTERNAL_IF
+  iface $VM1_INTERNAL_IF inet static
+  address $VM1_INTERNAL_IP
+  network $INTERNAL_NET_IP
+  netmask $INTERNAL_NET_MASK
+  broadcast $INTERNAL_NET.254
+  dns $VM_DNS
+
+  auto $VM1_MANAGEMENT_IF 
+  ifcae $VM1_MANAGEMENT_IF inet static
+  address $VM1_MANAGEMENT_IP
+  network $MANAGMENT_NET
+  netmask $MANAGEMENT_NET_MASK
+  broadcast $MANAGEMENT_NET.254
+  dns $VM_DNS " > $d/config-drives/$VM1_NAME-config/meta-data
+
+#user-data vm1
+echo "#!/bin/bash
+ip link add $VXLAN_IF type vxlan id $VID remote $VM2_VXLAN_IP local $VM1_VXLAN_IP dstport 4789
+ip link set $VXLAN_IF up
+ip addr add $VM1_VXLAN_IP/24 dev $VXLAN_IF
+curl -fsSl https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+add-apt-repository \
+  'deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable'
+apt-get update
+apt-get install docker-ce -y  " > $d/config-drives/$VM1_NAME-config/user-data
+
+
+
+#meta-data vm2
+echo "instance-id:
+hostname: $VM2_NAME
+local-hostname: $VM2_NAME
+network-interfaces: |
+  auto $VM2_INTERNAL_IF
+  iface $VM2_INTERNAL_IF inet static
+  address $VM2_INTERNAL_IP
+  network $INTERNAL_NET_IP
+  netmask $INTERNAL_NET_MASK
+  broadcast $INTERNAL_NET.254
+  dns $VM_DNS
+
+  auto $VM2_MANAGEMENT_IF
+  ifcae $VM2_MANAGEMENT_IF inet static
+  address $VM2_MANAGEMENT_IP
+  network $MANAGMENT_NET
+  netmask $MANAGEMENT_NET_MASK
+  broadcast $MANAGEMENT_NET.254
+  dns $VM_DNS " > $d/config-drives/$VM2_NAME-config/meta-data
+
+
+#user-data vm2
+echo "#!/bin/bash
+ip link add $VXLAN_IF type vxlan id $VID remote $VM1_VXLAN_IP local $VM2_VXLAN_IP dstport 4789
+ip link set $VXLAN_IF up
+ip addr add $VM2_VXLAN_IP/24 dev $VXLAN_IF
+curl -fsSl https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+add-apt-repository \
+  'deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable'
+apt-get update
+apt-get install docker-ce -y  " > $d/config-drives/$VM2_NAME-config/user-data
+
+
+#сборка образа 
+VMs_qcow2=/var/lib/libvirt/images/ubuntu-server-16.04.qcow2
+wget -O $VMS_qcow2 $VM_BASE_IMAGE
+
+cp $VMs_qcow2 $VM1_HDD
+cp $VMs_qcow2 $VM2_HDD
+
+mkisofs -o "$VM1_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM1_NAME-config
+mkisofs -o "$VM2_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM2_NAME-config
+
+
+#запуск виртуалок
+
+virsh define $d/$VM1_NAME.xml
+virsh define $d/$VM2_NAME.xml
+
+virsh start $VM1_NAME
+virsh start $VM1_NAME
