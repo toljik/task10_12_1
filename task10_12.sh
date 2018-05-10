@@ -153,7 +153,7 @@ virt-install \
   --connect qemu://system \
   --name $VM1_NAME
   --ram $VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
-  --os-type=linux --os-variant==ubuntu16.04 \
+  --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM1_HDD,format=qcow2,bus=virtio,cache=none \
   --disl path=$VM1_CONFIG_ISO,device=cdrom \
   --network network=$EXTERNAL_NET_NAME,mac=$MAC ,dev=$VM1_EXTERNAL_IF \
@@ -168,7 +168,7 @@ virt-install \
   --connect qemu://system \
   --name $VM2_NAME
   --ram $VM2_MB_RAM --vcpus=$VM2_NUM_CPU --$VM_TYPE \
-  --os-type=linux --os-variant==ubuntu16.04 \
+  --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM2_HDD,format=qcow2,bus=virtio,cache=none \
   --disl path=$VM2_CONFIG_ISO,device=cdrom \
   --network network=$INTERNAL_NET_NAME, dev=$VM2_INTERNAL_IF \
