@@ -65,6 +65,7 @@ virsh net-start $MANAGEMENT_NET_NAME
 #meta-data vm1
 echo "instance-id: vm1-toljika
 hostname: $VM1_NAME
+ -`cat $SSH_PUB_KEY`
 local-hostname: $VM1_NAME
 network-interfaces: |
   auto $VM1_EXTERNAL_IF
