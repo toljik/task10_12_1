@@ -62,90 +62,6 @@ virsh net-start $INTERNAL_NET_NAME
 virsh net-start $MANAGEMENT_NET_NAME
 
 
-#конфиг ВМ1
-
-echo "<domain type='$VM_VIRT_TYPE'>
-  <name>$VM1_NAME</name>
-  <memory unit='MiB'>$VM1_MB_RAM</memory>
-  <vcpu placment='static'>$VM1_NUM_CPU</vcpu>
-  <os>
-    <type>$VM_TYPE</type>
-    <boot dev='hd'/>
-  </os>
-  <devices>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2'/>
-      <source file='$VM1_HDD'/>
-      <target dev='vda' bus='virtio'/>
-    </disk>
-    <disk type='file' device='cdrom'>
-      <driver name='qemu' type='raw'/>
-      <source file='$VM1_CONFIG_ISO'/>
-      <target dev='hdc' bus='ide'/>
-      <readonly/>
-    </disk>
-    <interface type='network'>
-      <source dev='$VM1_EXTERNAL_IF'/>
-      <mac address='$MAC'/>
-      <source network='$EXTERNAL_NET_NAME'/>
-      <model type='virtio'/>
-    </interface>
-    <interface type='network'>
-      <source dev='$VM1_INTERNAL_IF'/>
-      <mac address='$MAC'/>
-      <source network='$INTERNAL_NET_NAME'/>
-      <model type='virtio'/>
-    </interface>
-    <interface type='network'>
-      <source dev='$VM1_MANAGEMENT_IF'/>
-      <mac address='$MAC'/>
-      <source network='$MANAGEMENT_NET_NAME'/>
-      <model type='virtio'/>
-    </interface>
-  </devices>
-</domain>" > $VM1_NAME.xml
-
-
-
-
-#конфиг ВМ2
-
-
-echo "<domain type='$VM_VIRT_TYPE'>
-  <name>$VM2_NAME</name>
-  <memory unit='MiB'>$VM2_MB_RAM</memory>
-  <vcpu placment='static'>$VM2_NUM_CPU</vcpu>
-  <os>
-    <type>$VM_TYPE</type>
-    <boot dev='hd'/>
-  </os>
-  <devices>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2'/>
-      <source file='$VM2_HDD'/>
-      <target dev='vda' bus='virtio'/>
-    </disk>
-    <disk type='file' device='cdrom'>
-      <driver name='qemu' type='raw'/>
-      <source file='$VM2_CONFIG_ISO'/>
-      <target dev='hdc' bus='ide'/>
-      <readonly/>
-    </disk>
-    <interface type='network'>
-      <source dev='$VM2_INTERNAL_IF'/>
-      <mac address='$MAC'/>
-      <source network='$INTERNAL_NET_NAME'/>
-      <model type='virtio'/>
-    </interface>
-    <interface type='network'>
-      <source dev='$VM2_MANAGEMENT_IF'/>
-      <mac address='$MAC'/>
-      <source network='$MANAGEMENT_NET_NAME'/>
-      <model type='virtio'/>
-    </interface>
-  </devices>
-</domain>" > $VM2_NAME.xml
-
 #meta-data vm1
 echo "instance-id: vm1-toljika
 hostname: $VM1_NAME
@@ -172,6 +88,7 @@ network-interfaces: |
 
 #user-data vm1
 echo "#!/bin/bash
+echo 1 > /proc/sys/net/ipv4/ip_forward
 ip link add $VXLAN_IF type vxlan id $VID remote $VM2_VXLAN_IP local $VM1_VXLAN_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM1_VXLAN_IP/24 dev $VXLAN_IF
@@ -188,6 +105,7 @@ apt-get install docker-ce -y  " > $d/config-drives/$VM1_NAME-config/user-data
 echo "instance-id: vm2-toljika
 hostname: $VM2_NAME
 local-hostname: $VM2_NAME
+ -`cat $SSH_PUB_KEY`
 network-interfaces: |
   auto $VM2_INTERNAL_IF
   iface $VM2_INTERNAL_IF inet static
@@ -228,9 +146,31 @@ mkisofs -o "$VM2_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM2_NAME
 
 
 #запуск виртуалок
+#Вм 1 запуск
+virt-install \
+  --connetct qemu://system \
+  --name $VM1_NAME
+  --ram $VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
+  --os-type=linux --os-variant==ubuntu16.04 \
+  --disk path=$VM1_HDD,format=qcow2,bus=virtio,cache=none \
+  --disl path=$VM1_CONFIG_ISO,device=cdrom \
+  --network network=$EXTERNAL_NET_NAME,mac=$MAC ,dev=$VM1_EXTERNAL_IF \
+  --network network=$INTERNAL_NET_NAME, dev=$VM1_INTERNAL_IF \
+  --network network=$MANAGEMENT_NET_NAME, dev=$VM1_MANAGEMENT_IF \
+  --graphics vnc,port=-1 \
+  --noautoconsole --virt-type $VM_VIRT_TYPE --import
 
-virsh define $d/$VM1_NAME.xml
-virsh define $d/$VM2_NAME.xml
 
-virsh start $VM1_NAME
-virsh start $VM1_NAME
+#Вм 2 запуск
+virt-install \
+  --connetct qemu://system \
+  --name $VM2_NAME
+  --ram $VM2_MB_RAM --vcpus=$VM2_NUM_CPU --$VM_TYPE \
+  --os-type=linux --os-variant==ubuntu16.04 \
+  --disk path=$VM2_HDD,format=qcow2,bus=virtio,cache=none \
+  --disl path=$VM2_CONFIG_ISO,device=cdrom \
+  --network network=$INTERNAL_NET_NAME, dev=$VM2_INTERNAL_IF \
+  --network network=$MANAGEMENT_NET_NAME, dev=$VM2_MANAGEMENT_IF \
+  --graphics vnc,port=-1 \
+  --noautoconsole --virt-type $VM_VIRT_TYPE --import
+
