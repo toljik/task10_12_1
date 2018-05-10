@@ -150,7 +150,7 @@ mkisofs -o "$VM2_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM2_NAME
 #запуск виртуалок
 #Вм 1 запуск
 virt-install \
-  --connetct qemu://system \
+  --connect qemu://system \
   --name $VM1_NAME
   --ram $VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
   --os-type=linux --os-variant==ubuntu16.04 \
@@ -165,7 +165,7 @@ virt-install \
 
 #Вм 2 запуск
 virt-install \
-  --connetct qemu://system \
+  --connect qemu://system \
   --name $VM2_NAME
   --ram $VM2_MB_RAM --vcpus=$VM2_NUM_CPU --$VM_TYPE \
   --os-type=linux --os-variant==ubuntu16.04 \
