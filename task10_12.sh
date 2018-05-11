@@ -1,4 +1,4 @@
-\#!/bin/bash
+#!/bin/bash
 
 d=`dirname $0`
 cd $d
@@ -7,10 +7,10 @@ cd $d
 . "$d/config"
 
 #обновления и доп пакеты
-apt update -y -q
-apt-get install libvirt-bin -y -q
-apt-get install qemu-kvm -y -q
-apt-get install virtinst -y -q
+apt-get update -y -q > /dev/null
+apt-get install libvirt-bin -y -q> /dev/null
+apt-get install qemu-kvm -y -q> /dev/null
+apt-get install virtinst -y -q> /dev/null
 #Доп параметры
 MAC=52:54:00:`(date; cat /proc/interrupts) | md5sum | sed -r 's/^(.{6}).*$/\1/; s/([0-9a-f]{2})/\1:/g; s/:$//;'`
 mkdir networks
@@ -150,29 +150,31 @@ mkisofs -o "$VM2_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM2_NAME
 #запуск виртуалок
 #Вм 1 запуск
 virt-install \
-  --connect qemu://system \
+  --connect qemu:///system \
   --name $VM1_NAME
-  --ram $VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
+  --ram=$VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
   --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM1_HDD,format=qcow2,bus=virtio,cache=none \
-  --disk path=$VM1_CONFIG_ISO,device=cdrom \
-  --network network=$EXTERNAL_NET_NAME,mac=$MAC ,dev=$VM1_EXTERNAL_IF \
-  --network network=$INTERNAL_NET_NAME, dev=$VM1_INTERNAL_IF \
-  --network network=$MANAGEMENT_NET_NAME, dev=$VM1_MANAGEMENT_IF \
+  --disk path=$VM1_CONFIG_ISO ,device=cdrom \
+  --network network=$EXTERNAL_NET_NAME,mac=$MAC, device=$VM1_EXTERNAL_IF \
+  --network network=$INTERNAL_NET_NAME \
+  --network network=$MANAGEMENT_NET_NAME \
   --graphics vnc,port=-1 \
   --noautoconsole --virt-type $VM_VIRT_TYPE --import
 
 
 #Вм 2 запуск
 virt-install \
-  --connect qemu://system \
+  --connect qemu:///system \
   --name $VM2_NAME
-  --ram $VM2_MB_RAM --vcpus=$VM2_NUM_CPU --$VM_TYPE \
+  --ram=$VM2_MB_RAM \
+  --vcpus=$VM2_NUM_CPU \
+  --$VM_TYPE \
   --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM2_HDD,format=qcow2,bus=virtio,cache=none \
-  --disk path=$VM2_CONFIG_ISO,device=cdrom \
-  --network network=$INTERNAL_NET_NAME, dev=$VM2_INTERNAL_IF \
-  --network network=$MANAGEMENT_NET_NAME, dev=$VM2_MANAGEMENT_IF \
+  --disk path=$VM2_CONFIG_ISO ,device=cdrom \
+  --network network=$INTERNAL_NET_NAME \
+  --network network=$MANAGEMENT_NET_NAME \
   --graphics vnc,port=-1 \
   --noautoconsole --virt-type $VM_VIRT_TYPE --import
 
