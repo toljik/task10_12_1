@@ -21,7 +21,11 @@ mkdir /var/lib/libvirt/images/vm1
 mkdir /var/lib/libvirt/images/vm2
 #Загрузка образа
 VMs_qcow2=/var/lib/libvirt/images/ubuntu-server-16.04.qcow2
-wget -O /var/lib/libvirt/images/ubuntu-server-16.04.qcow2 $VM_BASE_IMAGE
+
+if [ ! -f "$VMs_qcow2" ]; then
+
+ wget -O /var/lib/libvirt/images/ubuntu-server-16.04.qcow2 $VM_BASE_IMAGE
+fi
 #xml для external network
 
 echo "<network>
@@ -31,7 +35,7 @@ echo "<network>
       <port start='1024' end='65535'/>
     </nat>
   </forward>
-  <ip address='192.168.123.1' netmask='$EXTERNAL_NET_MASK'>
+  <ip address='$EXTERNAL_NET_HOST_IP' netmask='$EXTERNAL_NET_MASK'>
     <dhcp>
       <range start='$EXTERNAL_NET.2' end='$EXTERNAL_NET.254'/>
       <host mac='$MAC' name='vm1' ip='$VM1_EXTERNAL_IP'/>
@@ -90,7 +94,10 @@ network-interfaces: |
 
 #user-data vm1
 echo "#!/bin/bash
+password: qwerty
+chpasswd: { expire:False }
 echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o $VM1_EXTERNAL_IF -j MASQUERADE
 ip link add $VXLAN_IF type vxlan id $VID remote $VM2_VXLAN_IP local $VM1_VXLAN_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM1_VXLAN_IP/24 dev $VXLAN_IF
@@ -128,6 +135,8 @@ network-interfaces: |
 
 #user-data vm2
 echo "#!/bin/bash
+password: qwerty
+chpasswd: { expire:False }
 ip link add $VXLAN_IF type vxlan id $VID remote $VM1_VXLAN_IP local $VM2_VXLAN_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM2_VXLAN_IP/24 dev $VXLAN_IF
@@ -151,14 +160,14 @@ mkisofs -o "$VM2_CONFIG_ISO" -V cidata -r -J --quiet  $d/config-drives/$VM2_NAME
 #Вм 1 запуск
 virt-install \
   --connect qemu:///system \
-  --name $VM1_NAME
+  --name $VM1_NAME \
   --ram=$VM1_MB_RAM --vcpus=$VM1_NUM_CPU --$VM_TYPE \
   --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM1_HDD,format=qcow2,bus=virtio,cache=none \
-  --disk path=$VM1_CONFIG_ISO ,device=cdrom \
-  --network network=$EXTERNAL_NET_NAME,mac=$MAC, device=$VM1_EXTERNAL_IF \
-  --network network=$INTERNAL_NET_NAME \
-  --network network=$MANAGEMENT_NET_NAME \
+  --disk path=$VM1_CONFIG_ISO,device=cdrom \
+  --network network=$EXTERNAL_NET_NAME,mac=$MAC,source=$VM1_EXTERNAL_IF \
+  --network network=$INTERNAL_NET_NAME,source=$VM1_INTERNAL_IF \
+  --network network=$MANAGEMENT_NET_NAME,source=$VM1_MANAGEMENT_IF \
   --graphics vnc,port=-1 \
   --noautoconsole --virt-type $VM_VIRT_TYPE --import
 
@@ -166,15 +175,15 @@ virt-install \
 #Вм 2 запуск
 virt-install \
   --connect qemu:///system \
-  --name $VM2_NAME
+  --name $VM2_NAME \
   --ram=$VM2_MB_RAM \
   --vcpus=$VM2_NUM_CPU \
   --$VM_TYPE \
   --os-type=linux --os-variant=ubuntu16.04 \
   --disk path=$VM2_HDD,format=qcow2,bus=virtio,cache=none \
-  --disk path=$VM2_CONFIG_ISO ,device=cdrom \
-  --network network=$INTERNAL_NET_NAME \
-  --network network=$MANAGEMENT_NET_NAME \
+  --disk path=$VM2_CONFIG_ISO,device=cdrom \
+  --network network=$INTERNAL_NET_NAME,source=$VM2_INTERNAL_IF \
+  --network network=$MANAGEMENT_NET_NAME,source=$VM2_MANAGEMENT_IF \
   --graphics vnc,port=-1 \
   --noautoconsole --virt-type $VM_VIRT_TYPE --import
 
