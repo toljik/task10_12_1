@@ -89,6 +89,8 @@ iptables -t nat -A POSTROUTING -o $VM1_EXTERNAL_IF -j MASQUERADE
 ip link add $VXLAN_IF type vxlan id $VID remote $VM2_VXLAN_IP local $VM1_VXLAN_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM1_VXLAN_IP/24 dev $VXLAN_IF
+apt-get update -y
+apt-get install curl -y
 curl -fsSl https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 add-apt-repository \
   'deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -121,6 +123,8 @@ echo "#!/bin/bash
 ip link add $VXLAN_IF type vxlan id $VID remote $VM1_VXLAN_IP local $VM2_VXLAN_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM2_VXLAN_IP/24 dev $VXLAN_IF
+apt-get update -y
+apt-get install curl -y
 curl -fsSl https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 add-apt-repository \
   'deb [arch=amd64] https://download.docker.com/linux/ubuntu \
