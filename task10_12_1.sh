@@ -127,7 +127,7 @@ network-interfaces: |
 
 #user-data vm2
 echo "#!/bin/bash
-ip link add $VXLAN_IF type vxlan id $VID remote $VM1_VXLAN_IP local $VM2_VXLAN_IP dstport 4789
+ip link add $VXLAN_IF type vxlan id $VID remote $VM1_INTERNAL_IP local $VM2_INTERNAL_IP dstport 4789
 ip link set $VXLAN_IF up
 ip addr add $VM2_VXLAN_IP/24 dev $VXLAN_IF
 apt-get update -y
