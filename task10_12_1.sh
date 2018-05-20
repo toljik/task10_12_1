@@ -76,11 +76,14 @@ network-interfaces: |
   iface $VM1_INTERNAL_IF inet static
   address $VM1_INTERNAL_IP
   netmask $INTERNAL_NET_MASK
+  dns-nameservers $VM_DNS
+
   
   auto $VM1_MANAGEMENT_IF 
   iface $VM1_MANAGEMENT_IF inet static
   address $VM1_MANAGEMENT_IP
-  netmask $MANAGEMENT_NET_MASK" > $d/config-drives/$VM1_NAME-config/meta-data
+  netmask $MANAGEMENT_NET_MASK
+  dns-nameservers $VM_DNS " > $d/config-drives/$VM1_NAME-config/meta-data
 
 #user-data vm1
 echo "#!/bin/bash
@@ -111,11 +114,15 @@ network-interfaces: |
   iface $VM2_INTERNAL_IF inet static
   address $VM2_INTERNAL_IP
   netmask $INTERNAL_NET_MASK
+  gateway $VM1_INTERNAL_IP  
+  dns-nameservers $VM_DNS
+
 
   auto $VM2_MANAGEMENT_IF
   iface $VM2_MANAGEMENT_IF inet static
   address $VM2_MANAGEMENT_IP
-  netmask $MANAGEMENT_NET_MASK" > $d/config-drives/$VM2_NAME-config/meta-data
+  netmask $MANAGEMENT_NET_MASK 
+  dns-nameservers $VM_DNS" > $d/config-drives/$VM2_NAME-config/meta-data
 
 
 #user-data vm2
